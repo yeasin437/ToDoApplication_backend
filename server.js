@@ -1,29 +1,33 @@
 const express = require("express");
+const mongoose = require("mongoose");
 const cors = require("cors");
-const dotenv = require("dotenv");
-const connectDB = require("./db");
-
-// Load environment variables
-dotenv.config();
-
-// Connect to the database
-connectDB();
+require("dotenv").config(); // For environment variables
 
 const app = express();
 
 // Middleware
 app.use(express.json());
-app.use(cors());
+app.use(
+  cors({
+    origin: "https://todoapplication-k42d.onrender.com", // Frontend URL
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    credentials: true,
+  })
+);
 
-// Task schema and model
-const mongoose = require("mongoose");
+// Import database connection
+const connectDB = require("./db");
+connectDB();
+
+// Task Schema
 const taskSchema = new mongoose.Schema({
   title: { type: String, required: true },
   completed: { type: Boolean, default: false },
 });
+
 const Task = mongoose.model("Task", taskSchema);
 
-// API Routes
+// Routes
 app.get("/api/tasks", async (req, res) => {
   try {
     const tasks = await Task.find();
@@ -46,11 +50,11 @@ app.post("/api/tasks", async (req, res) => {
 
 app.put("/api/tasks/:id", async (req, res) => {
   const { id } = req.params;
-  const { title, completed } = req.body;
+  const { completed } = req.body;
   try {
     const updatedTask = await Task.findByIdAndUpdate(
       id,
-      { title, completed },
+      { completed },
       { new: true }
     );
     res.json(updatedTask);
@@ -69,8 +73,9 @@ app.delete("/api/tasks/:id", async (req, res) => {
   }
 });
 
-// Start server
-const PORT = process.env.PORT || 5000;
+// Server Configuration
+const PORT = process.env.PORT || 10000;
+
 app.listen(PORT, () => {
   console.log(`Backend running on port ${PORT}`);
 });
