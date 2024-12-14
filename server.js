@@ -1,25 +1,34 @@
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
-require("dotenv").config(); // For environment variables
+const dotenv = require("dotenv");
+
+// Load environment variables
+dotenv.config();
 
 const app = express();
 
 // Middleware
 app.use(express.json());
-app.use(
-  cors({
-    origin: "https://todoapplication-k42d.onrender.com", // Frontend URL
-    methods: ["GET", "POST", "PUT", "DELETE"],
-    credentials: true,
-  })
-);
+app.use(cors());
 
-// Import database connection
-const connectDB = require("./db");
+// MongoDB Connection
+const connectDB = async () => {
+  try {
+    const conn = await mongoose.connect(process.env.MONGO_URI, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    });
+    console.log(`MongoDB Connected: ${conn.connection.host}`);
+  } catch (error) {
+    console.error(`Error: ${error.message}`);
+    process.exit(1); // Exit process with failure
+  }
+};
+
 connectDB();
 
-// Task Schema
+// Define Task Schema
 const taskSchema = new mongoose.Schema({
   title: { type: String, required: true },
   completed: { type: Boolean, default: false },
@@ -28,6 +37,7 @@ const taskSchema = new mongoose.Schema({
 const Task = mongoose.model("Task", taskSchema);
 
 // Routes
+// Get all tasks
 app.get("/api/tasks", async (req, res) => {
   try {
     const tasks = await Task.find();
@@ -37,8 +47,27 @@ app.get("/api/tasks", async (req, res) => {
   }
 });
 
+// Get a specific task by ID
+app.get("/api/tasks/:id", async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const task = await Task.findById(id);
+
+    if (!task) {
+      return res.status(404).json({ message: "Task not found" });
+    }
+
+    res.json(task);
+  } catch (error) {
+    res.status(500).json({ message: "Failed to fetch task", error });
+  }
+});
+
+// Add a new task
 app.post("/api/tasks", async (req, res) => {
   const { title } = req.body;
+
   try {
     const newTask = new Task({ title });
     const savedTask = await newTask.save();
@@ -48,33 +77,47 @@ app.post("/api/tasks", async (req, res) => {
   }
 });
 
+// Update a task
 app.put("/api/tasks/:id", async (req, res) => {
   const { id } = req.params;
-  const { completed } = req.body;
+  const { title, completed } = req.body;
+
   try {
     const updatedTask = await Task.findByIdAndUpdate(
       id,
-      { completed },
-      { new: true }
+      { title, completed },
+      { new: true } // Return the updated task
     );
+
+    if (!updatedTask) {
+      return res.status(404).json({ message: "Task not found" });
+    }
+
     res.json(updatedTask);
   } catch (error) {
     res.status(500).json({ message: "Failed to update task", error });
   }
 });
 
+// Delete a task
 app.delete("/api/tasks/:id", async (req, res) => {
   const { id } = req.params;
+
   try {
-    await Task.findByIdAndDelete(id);
+    const deletedTask = await Task.findByIdAndDelete(id);
+
+    if (!deletedTask) {
+      return res.status(404).json({ message: "Task not found" });
+    }
+
     res.json({ message: "Task deleted successfully" });
   } catch (error) {
     res.status(500).json({ message: "Failed to delete task", error });
   }
 });
 
-// Server Configuration
-const PORT = process.env.PORT || 10000;
+// Start the server
+const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
   console.log(`Backend running on port ${PORT}`);
