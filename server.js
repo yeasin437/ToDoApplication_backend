@@ -1,7 +1,13 @@
-require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
+const dotenv = require("dotenv");
 const connectDB = require("./db");
+
+// Load environment variables
+dotenv.config();
+
+// Connect to the database
+connectDB();
 
 const app = express();
 
@@ -9,20 +15,15 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
-// Connect to MongoDB
-connectDB();
-
-// Task Schema and Model
+// Task schema and model
 const mongoose = require("mongoose");
-
 const taskSchema = new mongoose.Schema({
   title: { type: String, required: true },
   completed: { type: Boolean, default: false },
 });
-
 const Task = mongoose.model("Task", taskSchema);
 
-// Routes
+// API Routes
 app.get("/api/tasks", async (req, res) => {
   try {
     const tasks = await Task.find();
@@ -68,6 +69,8 @@ app.delete("/api/tasks/:id", async (req, res) => {
   }
 });
 
-// Start the server
+// Start server
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Backend running on port ${PORT}`));
+app.listen(PORT, () => {
+  console.log(`Backend running on port ${PORT}`);
+});
