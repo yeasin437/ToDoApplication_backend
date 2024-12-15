@@ -4,6 +4,7 @@ const taskSchema = new mongoose.Schema({
   title: {
     type: String,
     required: true,
+    trim: true,
   },
   completed: {
     type: Boolean,
@@ -11,4 +12,6 @@ const taskSchema = new mongoose.Schema({
   },
 });
 
-module.exports = mongoose.model("Task", taskSchema);
+const Task = mongoose.model("Task", taskSchema);
+
+module.exports = Task;
